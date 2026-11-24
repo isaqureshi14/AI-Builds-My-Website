@@ -10,17 +10,10 @@ use Inertia\Inertia;
 Route::get('/sites/{slug}', [WebsiteController::class, 'viewPublicSite'])->name('sites.public');
 Route::get('/sites/{website}/export', [WebsiteController::class, 'exportZip'])->name('sites.export');
 
-// Website Builder Studio
+// Website Builder Studio & Visual Editor
+Route::get('/', [WebsiteController::class, 'studio'])->name('home');
 Route::get('/studio', [WebsiteController::class, 'studio'])->name('studio.index');
-
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/editor/{website}', [WebsiteController::class, 'editor'])->name('studio.editor');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');

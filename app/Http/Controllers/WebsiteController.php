@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Throwable;
@@ -32,15 +33,30 @@ class WebsiteController extends Controller
      */
     public function studio(Request $request)
     {
-        $websites = Website::where('user_id', Auth::id())
-            ->orWhereNull('user_id')
-            ->latest()
-            ->take(20)
-            ->get();
+        $websites = [];
+        if (Schema::hasTable('websites')) {
+            $websites = Website::where('user_id', Auth::id())
+                ->orWhereNull('user_id')
+                ->latest()
+                ->take(20)
+                ->get();
+        }
 
-        return Inertia::render('Studio/Index', [
+        return Inertia::render('Home', [
             'websites' => $websites,
             'hasGeminiEnv' => !empty(config('services.gemini.key') ?? env('GEMINI_API_KEY')),
+        ]);
+    }
+
+    /**
+     * Visual live website editor view.
+     */
+    public function editor(Website $website)
+    {
+        $website->load(['sections' => fn($q) => $q->orderBy('order', 'asc'), 'facts']);
+
+        return Inertia::render('Editor', [
+            'website' => $website,
         ]);
     }
 
@@ -305,14 +321,19 @@ class WebsiteController extends Controller
     /**
      * Public page view for /sites/{slug}.
      */
-    public function viewPublicSite(string $slug): Response
+    public function viewPublicSite(Request $request, string $slug)
     {
         $website = Website::where('slug', $slug)->firstOrFail();
+        $website->load(['sections' => fn($q) => $q->orderBy('order', 'asc')]);
 
-        // Render full responsive static HTML
-        $html = $this->exportService->renderStaticHtml($website);
+        if ($request->query('format') === 'html' || $request->query('raw') === 'true') {
+            $html = $this->exportService->renderStaticHtml($website);
+            return response($html)->header('Content-Type', 'text/html; charset=UTF-8');
+        }
 
-        return response($html)->header('Content-Type', 'text/html; charset=UTF-8');
+        return Inertia::render('PublicSite', [
+            'website' => $website,
+        ]);
     }
 
     /**
