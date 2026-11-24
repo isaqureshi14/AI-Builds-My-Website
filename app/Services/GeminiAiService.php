@@ -52,7 +52,7 @@ class GeminiAiService
         }
 
         $modelName = $model ?: env('GEMINI_MODEL', $this->defaultModel);
-        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$apiKey}";
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent";
 
         $payload = [
             'contents' => [
@@ -77,6 +77,7 @@ class GeminiAiService
         try {
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
+                'x-goog-api-key' => $apiKey,
             ])->timeout(30)->post($endpoint, $payload);
 
             if (!$response->successful()) {
